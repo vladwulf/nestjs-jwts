@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -8,7 +9,11 @@ import { Tokens } from './types';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwtService: JwtService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+    private config: ConfigService,
+  ) {}
 
   async signupLocal(dto: AuthDto): Promise<Tokens> {
     const hash = await this.hashData(dto.password);
@@ -96,7 +101,7 @@ export class AuthService {
           email,
         },
         {
-          secret: 'at-secret',
+          secret: this.config.get<string>('AT_SECRET'),
           expiresIn: 60 * 15,
         },
       ),
@@ -106,7 +111,7 @@ export class AuthService {
           email,
         },
         {
-          secret: 'rt-secret',
+          secret: this.config.get<string>('RT_SECRET'),
           expiresIn: 60 * 60 * 24 * 7,
         },
       ),
