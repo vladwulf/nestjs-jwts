@@ -1,11 +1,12 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 import { AuthDto } from './dto';
-import { Tokens } from './types';
+import { JwtPayload, Tokens } from './types';
 
 @Injectable()
 export class AuthService {
@@ -25,9 +26,7 @@ export class AuthService {
       },
     });
 
-    const tokens = await this.getTokens(newUser.id, newUser.email);
-    await this.updateRtHash(newUser.id, tokens.refresh_token);
-    return tokens;
+    return await this.getTokensAndUpdateRtHash(newUser);
   }
 
   async signinLocal(dto: AuthDto): Promise<Tokens> {
@@ -42,9 +41,7 @@ export class AuthService {
     const passwordMatches = await bcrypt.compare(dto.password, user.hash);
     if (!passwordMatches) throw new ForbiddenException('Access Denied');
 
-    const tokens = await this.getTokens(user.id, user.email);
-    await this.updateRtHash(user.id, tokens.refresh_token);
-    return tokens;
+    return await this.getTokensAndUpdateRtHash(user);
   }
 
   async logout(userId: number) {
@@ -72,9 +69,7 @@ export class AuthService {
     const rtMatches = await bcrypt.compare(rt, user.hashedRt);
     if (!rtMatches) throw new ForbiddenException('Access Denied');
 
-    const tokens = await this.getTokens(user.id, user.email);
-    await this.updateRtHash(user.id, tokens.refresh_token);
-    return tokens;
+    return await this.getTokensAndUpdateRtHash(user);
   }
 
   async updateRtHash(userId: number, rt: string) {
@@ -89,32 +84,29 @@ export class AuthService {
     });
   }
 
-  hashData(data: string) {
-    return bcrypt.hash(data, 10);
+  hashData = (data: string) => bcrypt.hash(data, 10);
+
+  async getTokensAndUpdateRtHash(user: User): Promise<Tokens> {
+    const tokens = await this.getTokens(user);
+    await this.updateRtHash(user.id, tokens.refresh_token);
+    return tokens;
   }
 
-  async getTokens(userId: number, email: string): Promise<Tokens> {
+  async getTokens(user: User): Promise<Tokens> {
+    const jwtPayload: JwtPayload = {
+      sub: user.id,
+      email: user.email,
+    };
+
     const [at, rt] = await Promise.all([
-      this.jwtService.signAsync(
-        {
-          sub: userId,
-          email,
-        },
-        {
-          secret: this.config.get<string>('AT_SECRET'),
-          expiresIn: 60 * 15,
-        },
-      ),
-      this.jwtService.signAsync(
-        {
-          sub: userId,
-          email,
-        },
-        {
-          secret: this.config.get<string>('RT_SECRET'),
-          expiresIn: 60 * 60 * 24 * 7,
-        },
-      ),
+      this.jwtService.signAsync(jwtPayload, {
+        secret: this.config.get<string>('AT_SECRET'),
+        expiresIn: 60 * 15,
+      }),
+      this.jwtService.signAsync(jwtPayload, {
+        secret: this.config.get<string>('RT_SECRET'),
+        expiresIn: 60 * 60 * 24 * 7,
+      }),
     ]);
 
     return {
