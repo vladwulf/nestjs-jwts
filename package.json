@@ -14,9 +14,10 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
+    "pretest": "sh scripts/restart-test-db.sh",
+    "test": "dotenv -e .env.text -- jest -i --no-cache --passWithNoTests --c jest.config.json",
+    "test:watch": "dotenv -e .env.text -- jest --watch --config jest.config.json",
+    "test:cov": "dotenv -e .env.text -- jest --coverage --config jest.config.json",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
