@@ -16,8 +16,9 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "pretest": "sh scripts/restart-test-db.sh && sleep 1 && sh scripts/migrate-test-db.sh",
     "test": "dotenv -e .env.test -- jest -i --no-cache -c jest.config.json",
-    "test:watch": "dotenv -e .env.test -- jest --watch -c jest.config.json",
-    "test:cov": "dotenv -e .env.test -- jest --coverage -c jest.config.json",
+    "pretest:watch": "yarn pretest",
+    "test:watch": "dotenv -e .env.test -- jest -i --watch -c jest.config.json",
+    "test:cov": "dotenv -e .env.test -- jest -i --coverage -c jest.config.json",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest -c ./test/jest-e2e.json"
   },
