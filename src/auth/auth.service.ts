@@ -74,7 +74,7 @@ export class AuthService {
     return true;
   }
 
-  async refreshTokens(userId: number, rt: string) {
+  async refreshTokens(userId: number, rt: string): Promise<Tokens> {
     const user = await this.prisma.user.findUnique({
       where: {
         id: userId,
@@ -91,7 +91,7 @@ export class AuthService {
     return tokens;
   }
 
-  async updateRtHash(userId: number, rt: string) {
+  async updateRtHash(userId: number, rt: string): Promise<void> {
     const hash = await argon.hash(rt);
     await this.prisma.user.update({
       where: {
