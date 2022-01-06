@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import * as argon from 'argon2';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 import { AuthDto } from './dto';
@@ -38,7 +38,7 @@ export class AuthService {
 
     if (!user) throw new ForbiddenException('Access Denied');
 
-    const passwordMatches = await bcrypt.compare(dto.password, user.hash);
+    const passwordMatches = await argon.verify(user.hash, dto.password);
     if (!passwordMatches) throw new ForbiddenException('Access Denied');
 
     return this.getTokensAndUpdateRtHash(user);
@@ -66,7 +66,7 @@ export class AuthService {
     });
     if (!user || !user.hashedRt) throw new ForbiddenException('Access Denied');
 
-    const rtMatches = await bcrypt.compare(rt, user.hashedRt);
+    const rtMatches = await argon.verify(user.hashedRt, rt);
     if (!rtMatches) throw new ForbiddenException('Access Denied');
 
     return this.getTokensAndUpdateRtHash(user);
@@ -84,7 +84,7 @@ export class AuthService {
     });
   }
 
-  hashData = (data: string) => bcrypt.hash(data, 10);
+  hashData = (data: string) => argon.hash(data);
 
   async getTokensAndUpdateRtHash(user: User): Promise<Tokens> {
     const tokens = await this.getTokens(user);
