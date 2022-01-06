@@ -26,7 +26,7 @@ export class AuthService {
       },
     });
 
-    return await this.getTokensAndUpdateRtHash(newUser);
+    return this.getTokensAndUpdateRtHash(newUser);
   }
 
   async signinLocal(dto: AuthDto): Promise<Tokens> {
@@ -41,7 +41,7 @@ export class AuthService {
     const passwordMatches = await bcrypt.compare(dto.password, user.hash);
     if (!passwordMatches) throw new ForbiddenException('Access Denied');
 
-    return await this.getTokensAndUpdateRtHash(user);
+    return this.getTokensAndUpdateRtHash(user);
   }
 
   async logout(userId: number) {
@@ -69,7 +69,7 @@ export class AuthService {
     const rtMatches = await bcrypt.compare(rt, user.hashedRt);
     if (!rtMatches) throw new ForbiddenException('Access Denied');
 
-    return await this.getTokensAndUpdateRtHash(user);
+    return this.getTokensAndUpdateRtHash(user);
   }
 
   async updateRtHash(userId: number, rt: string) {
