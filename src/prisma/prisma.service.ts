@@ -8,10 +8,12 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor(config: ConfigService) {
+    const url = config.get<string>('DATABASE_URL');
+
     super({
       datasources: {
         db: {
-          url: config.get<string>('DATABASE_URL'),
+          url,
         },
       },
     });
@@ -23,5 +25,12 @@ export class PrismaService
 
   async onModuleDestroy() {
     await this.$disconnect();
+  }
+
+  async cleanDatabase() {
+    if (process.env.NODE_ENV === 'production') return;
+
+    // teardown logic
+    return Promise.all([this.user.deleteMany()]);
   }
 }
