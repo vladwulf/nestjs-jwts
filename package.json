@@ -20,7 +20,8 @@
     "test:watch": "dotenv -e .env.test -- jest -i --watch -c jest.config.json",
     "test:cov": "dotenv -e .env.test -- jest -i --coverage -c jest.config.json",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest -c ./test/jest-e2e.json"
+    "pretest:e2e": "yarn pretest",
+    "test:e2e": "dotenv -e .env.test -- jest -i --no-cache -c ./test/jest-e2e.json"
   },
   "dependencies": {
     "@nestjs/common": "^8.0.0",
