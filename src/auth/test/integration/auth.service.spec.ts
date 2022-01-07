@@ -45,7 +45,7 @@ describe('Auth Flow', () => {
     });
 
     it('should throw on duplicate user signup', async () => {
-      let tokens: Tokens;
+      let tokens: Tokens | undefined;
       try {
         tokens = await authService.signupLocal({
           email: user.email,
@@ -64,7 +64,7 @@ describe('Auth Flow', () => {
       await prisma.cleanDatabase();
     });
     it('should throw if no existing user', async () => {
-      let tokens: Tokens;
+      let tokens: Tokens | undefined;
       try {
         tokens = await authService.signinLocal({
           email: user.email,
@@ -93,7 +93,7 @@ describe('Auth Flow', () => {
     });
 
     it('should throw if password incorrect', async () => {
-      let tokens: Tokens;
+      let tokens: Tokens | undefined;
       try {
         tokens = await authService.signinLocal({
           email: user.email,
@@ -123,17 +123,17 @@ describe('Auth Flow', () => {
         password: user.password,
       });
 
-      let userFromDb: User;
+      let userFromDb: User | null;
 
       userFromDb = await prisma.user.findFirst({
         where: {
           email: user.email,
         },
       });
-      expect(userFromDb.hashedRt).toBeTruthy();
+      expect(userFromDb?.hashedRt).toBeTruthy();
 
       // logout
-      await authService.logout(userFromDb.id);
+      await authService.logout(userFromDb!.id);
 
       userFromDb = await prisma.user.findFirst({
         where: {
@@ -141,7 +141,7 @@ describe('Auth Flow', () => {
         },
       });
 
-      expect(userFromDb.hashedRt).toBeFalsy();
+      expect(userFromDb?.hashedRt).toBeFalsy();
     });
   });
 
@@ -151,7 +151,7 @@ describe('Auth Flow', () => {
     });
 
     it('should throw if no existing user', async () => {
-      let tokens: Tokens;
+      let tokens: Tokens | undefined;
       try {
         tokens = await authService.refreshTokens(1, '');
       } catch (error) {
@@ -162,27 +162,24 @@ describe('Auth Flow', () => {
     });
 
     it('should throw if user logged out', async () => {
-      let rt: string;
       // signup and save refresh token
-      await authService
-        .signupLocal({
-          email: user.email,
-          password: user.password,
-        })
-        .then((tokens) => {
-          rt = tokens.refresh_token;
-        });
+      const _tokens = await authService.signupLocal({
+        email: user.email,
+        password: user.password,
+      });
+
+      const rt = _tokens.refresh_token;
 
       // get user id from refresh token
       // also possible to get using prisma like above
       // but since we have the rt already, why not just decoding it
       const decoded = decode(rt);
-      const userId = Number(decoded.sub);
+      const userId = Number(decoded?.sub);
 
       // logout the user so the hashedRt is set to null
       await authService.logout(userId);
 
-      let tokens: Tokens;
+      let tokens: Tokens | undefined;
       try {
         tokens = await authService.refreshTokens(userId, rt);
       } catch (error) {
@@ -193,21 +190,22 @@ describe('Auth Flow', () => {
     });
 
     it('should throw if refresh token incorrect', async () => {
-      let rt: string;
-      // log in the user again and save rt
-      await authService
-        .signinLocal({
-          email: user.email,
-          password: user.password,
-        })
-        .then((tokens) => {
-          rt = tokens.refresh_token;
-        });
+      await prisma.cleanDatabase();
+
+      const _tokens = await authService.signupLocal({
+        email: user.email,
+        password: user.password,
+      });
+      console.log({
+        _tokens,
+      });
+
+      const rt = _tokens.refresh_token;
 
       const decoded = decode(rt);
-      const userId = Number(decoded.sub);
+      const userId = Number(decoded?.sub);
 
-      let tokens: Tokens;
+      let tokens: Tokens | undefined;
       try {
         tokens = await authService.refreshTokens(userId, rt + 'a');
       } catch (error) {
@@ -218,21 +216,18 @@ describe('Auth Flow', () => {
     });
 
     it('should refresh tokens', async () => {
-      let rt: string;
-      let at: string;
+      await prisma.cleanDatabase();
       // log in the user again and save rt + at
-      await authService
-        .signinLocal({
-          email: user.email,
-          password: user.password,
-        })
-        .then((tokens) => {
-          rt = tokens.refresh_token;
-          at = tokens.access_token;
-        });
+      const _tokens = await authService.signupLocal({
+        email: user.email,
+        password: user.password,
+      });
+
+      const rt = _tokens.refresh_token;
+      const at = _tokens.access_token;
 
       const decoded = decode(rt);
-      const userId = Number(decoded.sub);
+      const userId = Number(decoded?.sub);
 
       // since jwt uses seconds signature we need to wait for 1 second to have new jwts
       await new Promise((resolve, reject) => {
