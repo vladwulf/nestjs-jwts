@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import * as argon from 'argon2';
-import { PrismaService } from '../prisma/prisma.service';
 
+import { PrismaService } from '../prisma/prisma.service';
 import { AuthDto } from './dto';
 import { JwtPayload, Tokens } from './types';
 
@@ -74,19 +74,9 @@ export class AuthService {
     return true;
   }
 
-  async refreshTokens(userId: number, rt: string): Promise<Tokens> {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
-    if (!user || !user.hashedRt) throw new ForbiddenException('Access Denied');
-
-    const rtMatches = await argon.verify(user.hashedRt, rt);
-    if (!rtMatches) throw new ForbiddenException('Access Denied');
-
-    const tokens = await this.getTokens(user.id, user.email);
-    await this.updateRtHash(user.id, tokens.refresh_token);
+  async refreshTokens(userId: number, email:string): Promise<Tokens> {
+    const tokens = await this.getTokens(userId, email);
+    await this.updateRtHash(userId, tokens.refresh_token);
 
     return tokens;
   }
