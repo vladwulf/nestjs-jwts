@@ -22,6 +22,11 @@ export class RtStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
       .trim();
 
     if (!refreshToken) throw new ForbiddenException('Refresh token malformed');
+    
+    if (!user.hashedRt) {
+      // if a logout has deleted the rt we should not be allowed to refresh it
+      return false;
+    }
 
     return {
       ...payload,
